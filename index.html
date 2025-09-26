@@ -4,9 +4,272 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nates Secret Vault — Game Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1020; --card:#0f1724; --muted:#94a3b8; --accent:#7c3aed; --glass:rgba(255,255,255,0.03);
+      --success:#10b981;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,var(--bg),#071020);color:#e6eef8;-webkit-font-smoothing:antialiased}
+
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;gap:16px;align-items:center}
+    .logo{display:flex;gap:12px;align-items:center}
+    .vault{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#2b2f4a,#111827);display:grid;place-items:center;box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+    .logo h1{margin:0;font-size:20px;letter-spacing:0.6px}
+    .subtitle{color:var(--muted);font-size:13px}
+
+    .controls{margin-left:auto;display:flex;gap:10px;align-items:center}
+    .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:10px;color:inherit;cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#5b21b6);color:white;border:0}
+
+    .searchbar{margin-top:18px;display:flex;gap:10px}
+    .searchbar input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:inherit}
+    .filters{display:flex;gap:8px}
+    .chips{display:flex;gap:8px}
+    .chip{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);cursor:pointer;font-size:13px}
+    .chip.active{background:rgba(124,58,237,0.16);border-color:rgba(124,58,237,0.4)}
+
+    main{margin-top:20px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:8px}
+    .thumb{height:120px;border-radius:10px;background:linear-gradient(135deg,#0f1724,#0b1220);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .meta{display:flex;justify-content:space-between;align-items:center}
+    .title{font-size:15px;font-weight:600}
+    .desc{font-size:13px;color:var(--muted)}
+    .card-actions{display:flex;gap:8px;margin-top:auto}
+
+    footer{margin-top:26px;color:var(--muted);font-size:13px;text-align:center}
+
+    /* modal */
+    .modal-bg{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal{width:100%;max-width:980px;background:linear-gradient(180deg,#071130,#061124);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.04)}
+    .modal header{display:flex;align-items:center;justify-content:space-between}
+    .iframe-wrap{height:560px;background:#000;border-radius:8px;overflow:hidden;margin-top:12px}
+    .iframe-wrap iframe{width:100%;height:100%;border:0}
+
+    /* responsive */
+    @media (max-width:640px){.thumb{height:100px}.iframe-wrap{height:360px}}
+
+    /* small helpers */
+    .muted{color:var(--muted)}
+    .fav{background:rgba(255,255,255,0.03);padding:6px;border-radius:8px}
+  </style>
 </head>
 <body>
-  <h1>Nates Secret Vault</h1>
-  <p>This is your downloadable game hub.</p>
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <div class="vault" aria-hidden>
+          <!-- simple SVG vault icon -->
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="5" width="20" height="14" rx="3" stroke="white" stroke-opacity="0.12" stroke-width="1.2"/><circle cx="12" cy="12" r="2.4" stroke="white" stroke-opacity="0.12" stroke-width="1.2"/><path d="M12 8v1.6" stroke="white" stroke-opacity="0.08" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <h1>Nates Secret Vault</h1>
+          <div class="subtitle">Try to block this I dare you</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="muted">Welcome, Nate</div>
+        <button class="btn" id="themeBtn" title="Toggle theme">Theme</button>
+        <button class="btn" id="favoritesView">Favorites</button>
+        <button class="btn primary" id="addGameBtn">+ Add Game</button>
+      </div>
+    </header>
+
+    <div class="searchbar">
+      <input id="search" placeholder="Search games, tags, or creators…" aria-label="Search games">
+      <div class="filters">
+        <div class="chips" id="tagChips"></div>
+      </div>
+    </div>
+
+    <main>
+      <div class="grid" id="gameGrid" aria-live="polite"></div>
+      <div id="emptyState" class="muted" style="display:none;margin-top:18px">No games match your search.</div>
+    </main>
+
+    <footer>Built for the homies of pnp — save this file as <code>nates-secret-vault.html</code> and open in your browser.</footer>
+  </div>
+
+  <!-- Modal for launching games -->
+  <div class="modal-bg" id="modalBg" role="dialog" aria-hidden="true">
+    <div class="modal" role="document">
+      <header>
+        <div>
+          <strong id="modalTitle">Launching…</strong>
+          <div class="muted" id="modalSub">—</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="openInNew">Open in new tab</button>
+          <button class="btn" id="closeModal">Close</button>
+        </div>
+      </header>
+
+      <div class="iframe-wrap" id="iframeWrap">
+        <iframe id="gameFrame" src="about:blank" title="Game frame"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add game simple form (prompt-style) -->
+  <div id="addForm" style="display:none;position:fixed;right:18px;bottom:18px;background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);width:320px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><strong>Add a game</strong><button class="btn" id="closeAdd">X</button></div>
+    <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+      <input id="g-title" placeholder="Title">
+      <input id="g-desc" placeholder="Short description">
+      <input id="g-src" placeholder="URL (https://) or data: URI">
+      <input id="g-tags" placeholder="Comma-separated tags">
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="cancelAdd">Cancel</button><button class="btn primary" id="saveAdd">Save</button></div>
+    </div>
+  </div>
+
+  <script>
+    // Sample default games — you can replace these with real URLs or game embeds
+    const DEFAULT_GAMES = [
+      {id:'g1',title:'Pixel Runner',desc:'Endless running with neon obstacles',src:'https://learn-with.jskjsv6.workers.dev/1v1-lol-online/1v1-lol-online.github.io/main/file/index.html',tags:['arcade','endless']},
+      {id:'g2',title:'Space Colony',desc:'Build and defend your moon base',src:'https://example.com',tags:['strategy','building']},
+      {id:'g3',title:'Laser Arena',desc:'Fast-paced top-down shooter',src:'https://example.com',tags:['action','multiplayer']},
+      {id:'g4',title:'Puzzle Blocks',desc:'Relaxing block puzzle',src:'https://example.com',tags:['puzzle','casual']}
+    ];
+
+    // state
+    let games = [];
+    let filterTag = null;
+    let onlyFavorites = false;
+    const storageKey = 'nates_vault_games_v1';
+    const favKey = 'nates_vault_favs_v1';
+
+    // elements
+    const gameGrid = document.getElementById('gameGrid');
+    const searchEl = document.getElementById('search');
+    const tagChips = document.getElementById('tagChips');
+    const emptyState = document.getElementById('emptyState');
+    const modalBg = document.getElementById('modalBg');
+    const gameFrame = document.getElementById('gameFrame');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSub = document.getElementById('modalSub');
+    const openInNew = document.getElementById('openInNew');
+
+    // load
+    function loadState(){
+      const saved = localStorage.getItem(storageKey);
+      games = saved ? JSON.parse(saved) : DEFAULT_GAMES.slice();
+      const favs = localStorage.getItem(favKey);
+      window.favs = favs ? JSON.parse(favs) : {};
+    }
+
+    function saveState(){
+      localStorage.setItem(storageKey, JSON.stringify(games));
+    }
+
+    function render(){
+      const q = searchEl.value.trim().toLowerCase();
+      const filtered = games.filter(g=>{
+        if(onlyFavorites && !window.favs[g.id]) return false;
+        if(filterTag && !g.tags.includes(filterTag)) return false;
+        if(!q) return true;
+        return g.title.toLowerCase().includes(q) || (g.desc||'').toLowerCase().includes(q) || (g.tags||[]).join(' ').toLowerCase().includes(q);
+      });
+
+      gameGrid.innerHTML='';
+      if(filtered.length===0){ emptyState.style.display='block'; } else { emptyState.style.display='none'; }
+
+      filtered.forEach(g=>{
+        const card = document.createElement('div');card.className='card';
+        const thumb = document.createElement('div');thumb.className='thumb';thumb.textContent = g.title.split(' ').map(s=>s[0]).slice(0,3).join('');
+        const title = document.createElement('div');title.className='title';title.textContent=g.title;
+        const desc = document.createElement('div');desc.className='desc';desc.textContent=g.desc||'';
+        const meta = document.createElement('div');meta.className='meta';
+        const tagWrap = document.createElement('div');tagWrap.className='muted';tagWrap.textContent = g.tags.join(' • ');
+        const favBtn = document.createElement('button');favBtn.className='btn fav';favBtn.setAttribute('aria-label','favorite');favBtn.innerHTML = window.favs[g.id] ? '★' : '☆';
+        favBtn.onclick = ()=>{ window.favs[g.id] = !window.favs[g.id]; localStorage.setItem(favKey, JSON.stringify(window.favs)); render(); };
+        meta.appendChild(tagWrap);meta.appendChild(favBtn);
+
+        const actions = document.createElement('div');actions.className='card-actions';
+        const play = document.createElement('button');play.className='btn primary';play.textContent='Play';
+        play.onclick = ()=>openModal(g);
+        const info = document.createElement('button');info.className='btn';info.textContent='Info';info.onclick = ()=>alert(g.title + "\n\n" + (g.desc||'') + "\nTags: " + g.tags.join(', '));
+        actions.appendChild(play);actions.appendChild(info);
+
+        card.appendChild(thumb);card.appendChild(title);card.appendChild(desc);card.appendChild(meta);card.appendChild(actions);
+        gameGrid.appendChild(card);
+      });
+
+      renderChips();
+    }
+
+    function collectTags(){
+      const all = new Set();games.forEach(g=>(g.tags||[]).forEach(t=>all.add(t)));
+      return Array.from(all).sort();
+    }
+    function renderChips(){
+      tagChips.innerHTML='';
+      const tags = collectTags();
+      const allChip = document.createElement('button');allChip.className = 'chip ' + (!filterTag ? 'active':'');allChip.textContent='All';allChip.onclick=()=>{filterTag=null;render();};tagChips.appendChild(allChip);
+      tags.forEach(t=>{const c=document.createElement('button');c.className='chip '+(filterTag===t?'active':'');c.textContent=t;c.onclick=()=>{filterTag = (filterTag===t?null:t);render();};tagChips.appendChild(c)});
+    }
+
+    // modal
+    let currentGame = null;
+    function openModal(g){
+      currentGame = g;
+      modalTitle.textContent = g.title;
+      modalSub.textContent = g.desc || '';
+      gameFrame.src = g.src || 'about:blank';
+      openInNew.onclick = ()=>{ window.open(g.src || 'about:blank','_blank'); };
+      modalBg.style.display='flex';modalBg.setAttribute('aria-hidden','false');
+    }
+    function closeModal(){ modalBg.style.display='none'; modalBg.setAttribute('aria-hidden','true'); gameFrame.src='about:blank'; }
+
+    // quick add
+    const addGameBtn = document.getElementById('addGameBtn');
+    const addForm = document.getElementById('addForm');
+    document.getElementById('closeAdd').onclick = ()=>addForm.style.display='none';
+    document.getElementById('cancelAdd').onclick = ()=>addForm.style.display='none';
+    addGameBtn.onclick = ()=>addForm.style.display = (addForm.style.display==='block'?'none':'block');
+    document.getElementById('saveAdd').onclick = ()=>{
+      const t = document.getElementById('g-title').value.trim();
+      const d = document.getElementById('g-desc').value.trim();
+      const s = document.getElementById('g-src').value.trim();
+      const tg = document.getElementById('g-tags').value.split(',').map(x=>x.trim()).filter(Boolean);
+      if(!t || !s){ alert('Please provide at least a title and a URL'); return; }
+      const id = 'g' + Date.now();
+      games.unshift({id,title:t,desc:d,src:s,tags:tg});
+      saveState();
+      addForm.style.display='none';
+      render();
+    };
+
+    // other controls
+    document.getElementById('closeModal').onclick = closeModal;
+    modalBg.addEventListener('click', (e)=>{ if(e.target===modalBg) closeModal(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+    // search
+    searchEl.addEventListener('input', ()=>render());
+
+    // favorites view
+    document.getElementById('favoritesView').onclick = ()=>{ onlyFavorites = !onlyFavorites; document.getElementById('favoritesView').textContent = onlyFavorites ? 'All games' : 'Favorites'; render(); };
+
+    // theme toggle (simple illustrative)
+    document.getElementById('themeBtn').onclick = ()=>{
+      document.body.classList.toggle('light');
+      if(document.body.classList.contains('light')){
+        document.documentElement.style.setProperty('--bg','#f7fbff');document.documentElement.style.setProperty('--card','#ffffff');document.documentElement.style.setProperty('--muted','#334155');document.documentElement.style.setProperty('--accent','#6366f1');
+      } else {
+        document.documentElement.style.setProperty('--bg','#0b1020');document.documentElement.style.setProperty('--card','#0f1724');document.documentElement.style.setProperty('--muted','#94a3b8');document.documentElement.style.setProperty('--accent','#7c3aed');
+      }
+    };
+
+    // init
+    loadState(); render();
+
+    // expose a small API for power users in console
+    window.NatesVault = {games,saveState,openModal};
+  </script>
 </body>
 </html>
